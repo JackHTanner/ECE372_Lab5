@@ -16,7 +16,7 @@ void StartI2C_Trans(unsigned char SLA) {
     //Set two wire data register to the SLA, write bit
     TWDR = (SLA << 1) | 0x00;
 
-    //Trigger action: Clear TWINT and initiate enable
+    //Clear TWINT, initiate enable
     TWCR = (1 << TWINT) | (1 << TWEN);
 
     wait_for_completion;
