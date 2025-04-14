@@ -8,7 +8,18 @@ void initI2C() {
 }
 
 void StartI2C_Trans(unsigned char SLA) {
+    //Clear TWINT, initiate start condition, initiate enable
+    TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
 
+    wait_for_completion;
+
+    //Set two wire data register to the SLA, write bit
+    TWDR = (SLA << 1) | 0x00;
+
+    //Trigger action: Clear TWINT and initiate enable
+    TWCR = (1 << TWINT) | (1 << TWEN);
+
+    wait_for_completion;
 }
 
 void StopI2C_Trans() {
@@ -57,5 +68,6 @@ void Read_from(unsigned char SLA, unsigned char MEMADDRESS) {
 }
 
 unsigned char Read_data() {
-
+    //Return TWDR
+    return TWDR;
 }
