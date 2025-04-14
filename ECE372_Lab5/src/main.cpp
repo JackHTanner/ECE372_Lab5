@@ -1,19 +1,21 @@
 #include <Arduino.h>
+#include <avr/io.h>
+#include "I2C.h"
 
-// put function declarations here:
-int myFunction(int, int);
+#define unsigned char WHO_AM_I 0x68
 
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
-  // Hi Im KEDAR
+int main () {
+
+  
+ // State Machines
+
+ // Piezo Alarm 
+
+ // Button
+
+
+InitI2C()
+
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-}
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
-}
