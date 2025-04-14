@@ -78,6 +78,7 @@ void Read_from(unsigned char SLA, unsigned char MEMADDRESS) {
 
     // Trigger action, master acknowledge bit
     TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
+    
     wait_for_completion;
 
     // Trigger action
