@@ -12,12 +12,19 @@ void StartI2C_Trans(unsigned char SLA) {
 }
 
 void StopI2C_Trans() {
-
+    //Trigger action, stop condition
+    TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
 }
 
 
 void Write(unsigned char data) {
+    //Set two wire data register equal to incoming data
+    TWDR = data;
 
+    //Trigger action
+    TWCR = (1 << TWINT) | (1 << TWEN);
+
+    wait_for_completion;
 }
 
 void Read_from(unsigned char SLA, unsigned char MEMADDRESS) {
