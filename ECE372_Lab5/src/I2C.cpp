@@ -1,7 +1,7 @@
 #include "I2C.h"
 #include <avr/io.h>
 
- #define wait_for_completion while(!(TWCR & (1 << TWINT)))
+#define wait_for_completion while(!(TWCR & (1 << TWINT)));
 
 void initI2C() {
 
