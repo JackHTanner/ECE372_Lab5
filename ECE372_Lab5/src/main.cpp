@@ -1,19 +1,89 @@
 #include <Arduino.h>
+#include "timer.h"
+#include "switch.h"
+#include "SPI.h"
+#include "I2C.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
-// put function declarations here:
-int myFunction(int, int);
+typedef enum {SMILEY, FROWN, DEBOUNCE_PRESS, WAIT} StateType;
 
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+volatile StateType state = SMILEY;
+volatile bool smiley = true;
 
+int main () {
+  Serial.begin(9600);
+  Serial.flush();
+  Serial.println("Starting...");
+    // Initialize the timer
+    initTimer1();
+    // Initialize the MAX7219
+    initMAX7219();
+
+    initSwitchPB3();
+
+    sei(); // Enable global interrupts
+    
+    //start with smiley face
+    displaySmileyFace();
+    
+  while (1) {
+    
+    switch (state) {
+      case SMILEY:
+        displaySmileyFace();
+        Serial.println("Smiley face displayed");
+        break;
+
+      case FROWN:
+        displayFrownyFace();
+        Serial.println("Frowny face displayed");
+        break;
+
+      case DEBOUNCE_PRESS:
+        Serial.println("In Debounce Press");
+        delayMs(10);  //delay for debouncing
+          state = WAIT;
+        break;
+/*
+      case WAIT:
+        Serial.println("In Wait");
+        break;
+        */
+    }
+    
+	}
+
+  return 0;
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-}
+volatile bool buttonPressed = false;
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+
+ISR(PCINT0_vect){
+  Serial.println("Interrupt triggered");
+  delayMs(10); // Small debounce delay
+    
+    if (!(PINB & (1 << PB3))) { // Logic on PB3 is LOW (button pressed)
+        // Flag that the button was pressed!!
+        buttonPressed = true;
+    } 
+    
+    else { // Logic on PB3 is high (button released)
+        // Only toggle face on release, if the button was previously pressed
+        if (buttonPressed) {
+            state = (state == SMILEY) ? FROWN : SMILEY; // Toggle between SMILEY and FROWN
+            buttonPressed = false; // Reset the flag
+            }
+            
+        if (state == SMILEY) {   //Logic for changing display
+          clearDisplay();
+          displaySmileyFace();
+        }
+
+        else {
+          clearDisplay();
+          displayFrownyFace();
+        }
+      }
 }
