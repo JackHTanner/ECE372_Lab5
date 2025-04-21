@@ -37,7 +37,7 @@ int main () {
     // Initialize the MAX7219
     initMAX7219();
 
-    initSwitchPB3();
+    initSwitchPD2();
 
     sei(); // Enable global interrupts
     
@@ -74,12 +74,12 @@ ISR(PCINT0_vect){
   Serial.println("Interrupt triggered");
   delayMs(10); // Small debounce delay
     
-    if (!(PINB & (1 << PB3))) { // Logic on PB3 is LOW (button pressed)
+    if (!(PINB & (1 << PD2))) { // Logic on PD2 is LOW (button pressed)
         // Flag that the button was pressed!!
         buttonPressed = true;
     } 
     
-    else { // Logic on PB3 is high (button released)
+    else { // Logic on PD2 is high (button released)
         // Only toggle face on release, if the button was previously pressed
         if (buttonPressed) {
             state = (state == SMILEY) ? FROWN : SMILEY; // Toggle between SMILEY and FROWN
