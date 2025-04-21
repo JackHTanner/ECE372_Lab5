@@ -50,9 +50,10 @@ int main () {
     //start with smiley face
     displaySmileyFace();
     
-  /* Use as the reference
+  
   while (1) {
-
+ /* Use as the reference
+ 
     Read_from(SLA, MEMADDRESS);
     xpos = Read_data();
     Read_from(SLA, MEMADDRESS);
@@ -123,16 +124,6 @@ volatile bool buttonPressed = false;
 
 ISR(INT0_vect){
   Serial.println("Interrupt triggered");
-<<<<<<< HEAD
-  if(buttonState == WAIT_PRESS){
-    Serial.println("Pressed");
-    buttonState = DEBOUNCE_PRESS;
-  }
-  else if(buttonState == WAIT_RELEASE){
-    Serial.println("Removed finger");
-    buttonState = DEBOUNCE_RELEASE;
-  }
-=======
   delayMs(10); // Small debounce delay
     
     if (!(PINB & (1 << PD2))) { // Logic on PD2 is LOW (button pressed)
@@ -157,5 +148,4 @@ ISR(INT0_vect){
           displayFrownyFace();
         }
       }
->>>>>>> e3d234d238cc13deb63f3136f8f5d5a4bb5e96e0
 }
