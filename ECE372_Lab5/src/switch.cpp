@@ -2,9 +2,9 @@
 #include <avr/io.h>
 
 /*
- * Initializes pull-up resistor on PB3 and sets it into input mode
+ * Initializes pull-up resistor on PD2 and sets it into input mode
  */
-void initSwitchPB3(){
+void initSwitchPD2(){
     //Set up PD2 as input
     DDRD &= ~(1 << DDD2);
 
