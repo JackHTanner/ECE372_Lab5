@@ -57,16 +57,9 @@ int main () {
         Serial.println("Frowny face displayed");
         break;
 
-      case DEBOUNCE_PRESS:
-        Serial.println("In Debounce Press");
-        delayMs(10);  //delay for debouncing
-          state = WAIT;
+      default:
+        Serial.println("In defauly LED state.");
         break;
-/*
-      case WAIT:
-        Serial.println("In Wait");
-        break;
-        */
     }
     
 	}
