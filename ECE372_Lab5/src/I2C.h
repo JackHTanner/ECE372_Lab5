@@ -5,7 +5,6 @@ void InitI2C ();
 
 void StartI2C_Trans(unsigned char SLA); 
 
-
 void StopI2C_Trans();
 
 void Write(unsigned char data);

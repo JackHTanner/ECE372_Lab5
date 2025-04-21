@@ -54,19 +54,21 @@ void Read_from(unsigned char SLA, unsigned char MEMADDRESS) {
     // switch master to read (receiver) mode and slave to transmitter
     TWCR = ((1 << TWEN) | (1 << TWINT) | (1 << TWSTA)); // set another start
     wait_for_completion;
-    TWDR = SLA + I2C_READ; // SLA+R, switch to reading
-    TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
-    wait_for_completion;
+    TWDR = (SLA << 1) + I2C_READ; // SLA+R, switch to reading
+    //TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
+    //wait_for_completion;
     // perform first read to get the MSB
+
     TWCR = ((1 << TWINT) | (1 << TWEN) | (1 << TWEA)); // with ACK set
     wait_for_completion;
+    
     // the received byte is now in the TWDR data register
-    Read_data(); 
+  //  Read_data(); 
     // second read to get LSB
     TWCR = ((1 << TWINT) | (1 << TWEN)); // no acknowledge bit set, NOT ACK
     wait_for_completion;
     // the second byte is now in TWDR
-    Read_data();
+  ;
 
 }
 
