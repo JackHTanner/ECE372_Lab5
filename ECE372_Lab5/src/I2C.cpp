@@ -2,95 +2,106 @@
 #include <avr/io.h>
 
 #define wait_for_completion while(!(TWCR & (1 << TWINT)));
+#define I2C_WRITE 0
+#define I2C_READ 1
+#define unsigned char WHO_AM_I 0x68
 
-void initI2C() {
-    // Set prescalar TWPS to 1 in TWSR register
-    TWSR |= (1 << TWPS0);
-    TWSR &= ~(1 << TWPS1);
-
-    /* Set two wire interface bit rate register TWBR
-        Using formula:
-        TWBR =   (CPU Clock Freq/SCL Clock Freq) - 16
-                ---------------------------------------
-                            2 * 4^(TWPS)
-
-        Assuming SCL Clock Freq = 10 kHz
-
-         TWBR =   (16 * 10^6/10 * 10^3) - 16
-                -------------------------------
-                            2 * 4^(1)
-
-         = 198
-         = 0xC6
-    */
-
-    TWBR = 0xC6;
-
-    // Enable two wire interface
-    TWBR = (1 << TWEN);
+void InitI2C () {
+    StartI2C_Trans(WHO_AM_I); // Wake up I2C module on mega 2560 I2C address is 0b1101000
+    StartI2C_Trans(0x6B); 
+    Write(0x00); // Power Managment register is 6B and I must set every bit in that register to 0
+    StopI2C_Trans();
+    
+    //- Accelerometre Configuration regiser is 1C set all the bits to 0
+    //- Convert accelerometre value from LSB/g to g by dividing the value of the output reg by the LSB Sensitivity
+    //?- Read from the Accelerometre register 
+    //3B XOUT_high, 3C XOUT_low, 3D YOUT_high, 3E YXOUT_low, 3F ZOUT_high, 40 ZXOUT_low,
+    TWSR = ((1<<TWPS1) | (1<<TWPS0)); //- Set prescaler TWPS to Power Managment register is 6B 
+    TWBR = 18; // 100k Hz- Set two wire interface bit rate register TWBR
+    TWCR = (1 << TWEN); //- Enable two wire interface
 }
 
 void StartI2C_Trans(unsigned char SLA) {
-    // Clear TWINT, initiate start condition, initiate enable
-    TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
-
+    // set the start condition
+    TWCR = ((1 << TWEN) | (1 << TWINT) | (1 << TWSTA));
     wait_for_completion;
-
-    // Set two wire data register to the SLA, write bit
-    TWDR = (SLA << 1) | 0x00;
-
-    // Trigger action: Clear TWINT and initiate enable
-    TWCR = (1 << TWINT) | (1 << TWEN);
-
+    // send the address
+    TWDR =  SLA + I2C_WRITE; // SLA+W, address + write bit
+    TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
     wait_for_completion;
 }
+
 
 void StopI2C_Trans() {
-    // Trigger action, stop condition
-    TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
+
+    TWCR = ((1 << TWEN) | (1 << TWINT) | (1 << TWSTO)); // trigger I2C action
+    wait_for_completion;
+
 }
 
-
 void Write(unsigned char data) {
-    // Set two wire data register equal to incoming data
-    TWDR = data;
 
-    // Trigger action
-    TWCR = (1 << TWINT) | (1 << TWEN);
-
+    TWDR = data; // register value in the data register
+    TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
     wait_for_completion;
+
 }
 
 void Read_from(unsigned char SLA, unsigned char MEMADDRESS) {
-    // Start a transmission to the SLA
+
     StartI2C_Trans(SLA);
-
-    // Write to the MEMADDRESS
     Write(MEMADDRESS);
-
-    // Clear TWINT, initiate start condition, initiate enable
-    TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
-
+    // switch master to read (receiver) mode and slave to transmitter
+    TWCR = ((1 << TWEN) | (1 << TWINT) | (1 << TWSTA)); // set another start
     wait_for_completion;
+    TWDR = (SLA << 1) + I2C_READ; // SLA+R, switch to reading
+    //TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
+    //wait_for_completion;
+    // perform first read to get the MSB
 
-    // Set two wire data register to the SLA, read bit
-    TWDR = (SLA << 1) | 0x01;
-
-    // Trigger action, master acknowledge bit
-    TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
+    TWCR = ((1 << TWINT) | (1 << TWEN) | (1 << TWEA)); // with ACK set
+    wait_for_completion;
     
+    // the received byte is now in the TWDR data register
+  //  Read_data(); 
+    // second read to get LSB
+    TWCR = ((1 << TWINT) | (1 << TWEN)); // no acknowledge bit set, NOT ACK
     wait_for_completion;
+    // the second byte is now in TWDR
+  ;
 
-    // Trigger action
-    TWCR = (1 << TWINT) | (1 << TWEN);
-
-    wait_for_completion;
-
-    // Trigger action, stop condition
-    TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
 }
 
 unsigned char Read_data() {
-    // Return TWDR
     return TWDR;
 }
+
+/*
+uint16_t accVal () {
+
+
+// specify the register
+TWDR = 0x03; // register value in the data register
+TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
+wait_for_completion;
+// switch master to read (receiver) mode and slave to transmitter
+TWCR = ((1 << TWEN) | (1 << TWINT) | (1 << TWSTA)); // set another start
+wait_for_completion;
+TWDR = 0x6C + I2C_READ; // SLA+R, switch to reading
+TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
+wait_for_completion;
+ // perform first read to get the MSB
+TWCR = ((1 << TWINT) | (1 << TWEN) | (1 << TWEA)); // with ACK set
+wait_for_completion;
+// the received byte is now in the TWDR data register
+register_value = (TWDR << 8); // put value in top half of variable
+// second read to get LSB
+TWCR = ((1 << TWINT) | (1 << TWEN)); // no acknowledge bit set, NOT ACK
+wait_for_completion;
+// the second byte is now in TWDR
+register_value += TWDR;
+
+return register_value;
+}
+
+*/

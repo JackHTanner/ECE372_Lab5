@@ -38,7 +38,7 @@ int main () {
     // Initialize the MAX7219
     initMAX7219();
 
-    initSwitchPB3();
+    initSwitchPD2();
 
     sei(); // Enable global interrupts
     
@@ -102,6 +102,7 @@ volatile bool buttonPressed = false;
 
 ISR(INT0_vect){
   Serial.println("Interrupt triggered");
+<<<<<<< HEAD
   if(buttonState == WAIT_PRESS){
     Serial.println("Pressed");
     buttonState = DEBOUNCE_PRESS;
@@ -110,4 +111,30 @@ ISR(INT0_vect){
     Serial.println("Removed finger");
     buttonState = DEBOUNCE_RELEASE;
   }
+=======
+  delayMs(10); // Small debounce delay
+    
+    if (!(PINB & (1 << PD2))) { // Logic on PD2 is LOW (button pressed)
+        // Flag that the button was pressed!!
+        buttonPressed = true;
+    } 
+    
+    else { // Logic on PD2 is high (button released)
+        // Only toggle face on release, if the button was previously pressed
+        if (buttonPressed) {
+            state = (state == SMILEY) ? FROWN : SMILEY; // Toggle between SMILEY and FROWN
+            buttonPressed = false; // Reset the flag
+            }
+            
+        if (state == SMILEY) {   //Logic for changing display
+          clearDisplay();
+          displaySmileyFace();
+        }
+
+        else {
+          clearDisplay();
+          displayFrownyFace();
+        }
+      }
+>>>>>>> e3d234d238cc13deb63f3136f8f5d5a4bb5e96e0
 }
