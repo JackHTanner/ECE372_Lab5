@@ -4,10 +4,11 @@
 #define wait_for_completion while(!(TWCR & (1 << TWINT)));
 #define I2C_WRITE 0
 #define I2C_READ 1
-#define unsigned char WHO_AM_I 0x68
+#define WHO_AM_I 0x68
 
 void InitI2C () {
     StartI2C_Trans(WHO_AM_I); // Wake up I2C module on mega 2560 I2C address is 0b1101000
+
     StartI2C_Trans(0x6B); 
     Write(0x00); // Power Managment register is 6B and I must set every bit in that register to 0
     StopI2C_Trans();
