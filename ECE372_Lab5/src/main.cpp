@@ -3,11 +3,27 @@
 #include "switch.h"
 #include "SPI.h"
 #include "I2C.h"
+#include "PWM.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-typedef enum {SMILEY, FROWN, DEBOUNCE_PRESS, WAIT} StateType;
+typedef enum
+{
+  SMILEY,
+  FROWN,
+  DEBOUNCE_PRESS,
+  WAIT
+} StateType;
 
+typedef enum stateName
+{
+  WAIT_PRESS,
+  DEBOUNCE_PRESS,
+  WAIT_RELEASE,
+  DEBOUNCE_RELEASE
+} State;
+
+volatile State buttonState = WAIT_PRESS;
 volatile StateType state = SMILEY;
 volatile bool smiley = true;
 
@@ -15,8 +31,9 @@ int main () {
   Serial.begin(9600);
   Serial.flush();
   Serial.println("Starting...");
-    // Initialize the timer
+    // Initialize the timer and PWM timer
     initTimer1();
+    initPWMTimer3();
     // Initialize the MAX7219
     initMAX7219();
 

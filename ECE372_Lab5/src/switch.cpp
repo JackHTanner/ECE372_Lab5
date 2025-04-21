@@ -8,7 +8,7 @@ void initSwitchPB3(){
     //Set up PB3 as input
     DDRB &= ~(1 << DDB3);
 
-    // Enable pull-up resisitor on PB3
+    // Enable pull-up resisitor on PB3 (pin 50)
     PORTB |= (1 << PORTB3);
 
     //Enable interrupt 0 on pin-change interrupt control register
