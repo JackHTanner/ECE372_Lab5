@@ -28,6 +28,11 @@ volatile StateType state = SMILEY;
 volatile bool smiley = true;
 
 int main () {
+
+  uint16_t xpos;
+  uint16_t ypos;
+  uint16_t zpos;
+
   Serial.begin(9600);
   Serial.flush();
   Serial.println("Starting...");
@@ -44,7 +49,23 @@ int main () {
     //start with smiley face
     displaySmileyFace();
     
+  /* Use as the reference
   while (1) {
+
+    Read_from(SLA, MEMADDRESS);
+    xpos = Read_data();
+    Read_from(SLA, MEMADDRESS);
+    xpos = (xpos << 8) + Read_data();
+    Read_from(SLA, MEMADDRESS);
+    ypos = Read_data();
+    Read_from(SLA, MEMADDRESS);
+    ypos = (ypos << 8) + Read_data();
+    Read_from(SLA, MEMADDRESS);
+    zpos = Read_data();
+    Read_from(SLA, MEMADDRESS);
+    zpos = (zpos << 8) + Read_data();
+
+    */
     
     switch (state) {
       case SMILEY:
