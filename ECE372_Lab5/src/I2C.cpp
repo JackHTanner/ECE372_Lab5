@@ -1,5 +1,6 @@
-#include <avr/io.h>
 #include "I2C.h"
+#include <avr/io.h>
+
 #define wait_for_completion while(!(TWCR & (1 << TWINT)));
 #define I2C_WRITE 0
 #define I2C_READ 1

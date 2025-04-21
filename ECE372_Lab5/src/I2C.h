@@ -1,6 +1,5 @@
 #ifndef I2C_H
 #define I2C_H
-#include <avr/io.h>
 
 void InitI2C ();
 
