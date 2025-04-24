@@ -8,6 +8,14 @@ void initTimer1(){
     OCR1A = 15;
 }
 
+void initTimer2() {
+    TCCR2A = 0; // Normal mode
+    TCCR2B &= ~((1 << CS22) | (1 << CS21));  // Clear CS22 and CS21
+    TCCR2B |= (1 << CS22) | (1 << CS21);     // Set CS22 and CS21
+    TIMSK2 = (1 << TOIE2); // Enable overflow interrupt
+    TCNT2 = 0;
+}
+
 
 /* This delays the program an amount of microsecond specified by unsigned int delay.
 * Used for timer 1. 

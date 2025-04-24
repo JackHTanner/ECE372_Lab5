@@ -24,59 +24,71 @@ typedef enum stateName
 volatile State buttonState = WAIT_PRESS;
 volatile StateType state = SMILEY;
 volatile bool smiley = true;
+volatile uint8_t toggleState = 0;
+volatile uint16_t tickCounter = 0;
+volatile uint8_t overflowCount = 0;
+volatile bool useHighFreq = true;
 bool chirp = false;
-
 int main () {
-
-  uint16_t xpos;
-  uint16_t ypos;
-  uint16_t zpos;
 
   Serial.begin(9600);
   Serial.flush();
   Serial.println("Starting...");
     // Initialize the timer and PWM timer
     initTimer1();
+    initTimer2();
     initPWMTimer3();
+    turnOffDutyCycle();
     // Initialize the MAX7219
     initMAX7219();
     InitI2C();
-    initSwitchPD2();
+  
+    int16_t ax, ay, az;
+
+    initSwitchPB3();
 
     sei(); // Enable global interrupts
     
     //start with smiley face
     displaySmileyFace();
-    
-  
-  while (1) {
- /* Use as the reference
- 
-    Read_from(SLA, MEMADDRESS);
-    xpos = Read_data();
-    Read_from(SLA, MEMADDRESS);
-    xpos = (xpos << 8) + Read_data();
-    Read_from(SLA, MEMADDRESS);
-    ypos = Read_data();
-    Read_from(SLA, MEMADDRESS);
-    ypos = (ypos << 8) + Read_data();
-    Read_from(SLA, MEMADDRESS);
-    zpos = Read_data();
-    Read_from(SLA, MEMADDRESS);
-    zpos = (zpos << 8) + Read_data();
 
-    */
-    
+  while (1) {
+    ReadAccelData(&ax, &ay, &az);
+
+    // Now we calculate tilt
+    float ax_g = ax / 16384.0;
+    float ay_g = ay / 16384.0;
+    float az_g = az / 16384.0;
+
+    float pitch = atan2(ax_g, sqrt(ay_g * ay_g + az_g * az_g)) * (180.0 / 3.14159);
+    float roll  = atan2(ay_g, sqrt(ax_g * ax_g + az_g * az_g)) * (180.0 / 3.14159);
+
+    int isTilted = (fabs(pitch) >= 45.0) || (fabs(roll) >= 45.0);
+
+    Serial.print(ax);
+    Serial.print(" ");
+    Serial.print(ay);
+    Serial.print(" ");
+    Serial.print(az);
+    Serial.print(" ");
+    if (isTilted){
+      Serial.println("IT's TILTING!!!!");
+      state = FROWN;
+    }
+
+    else{
+      Serial.println("All is stable");
+      state = SMILEY;
+    }
+
     switch (state) {
       case SMILEY:
         displaySmileyFace();
-        Serial.println("Smiley face displayed");
         break;
 
       case FROWN:
         displayFrownyFace();
         chirp = true;
-        Serial.println("Frowny face displayed");
         break;
 
       default:
@@ -103,31 +115,38 @@ int main () {
     }
 
     if (chirp == true){
-      changeDutyCycle(512);
-      delayMs(500);
-      changeDutyCycle(0);
-      delayMs(500);
+      turnOnDutyCycle();
     }
     else{
-      changeDutyCycle(0);
+      turnOffDutyCycle();
     }
-    
 	}
-
   return 0;
 }
 
-volatile bool buttonPressed = false;
-
-
-ISR(INT0_vect){
+ISR(PCINT0_vect){
   Serial.println("Interrupt triggered");
+  chirp = false;
+  state = SMILEY;
   if(buttonState == WAIT_PRESS){
-    Serial.println("Pressed");
     buttonState = DEBOUNCE_PRESS;
   }
   else if(buttonState == WAIT_RELEASE){
-    Serial.println("Removed finger");
     buttonState = DEBOUNCE_RELEASE;
+  }
+}
+
+ISR(TIMER2_OVF_vect) {
+  overflowCount++;
+  if (overflowCount >= 25) { // ~100ms if each overflow is ~4ms
+      overflowCount = 0;
+      useHighFreq = !useHighFreq;
+
+      if (useHighFreq) {
+          ICR3 = 99;
+      } else {
+          ICR3 = 199;
+      }
+      OCR3B = ICR3 / 2; // 50% duty
   }
 }

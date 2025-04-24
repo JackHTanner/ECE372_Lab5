@@ -1,108 +1,78 @@
-#include "I2C.h"
 #include <avr/io.h>
+#include <util/delay.h>
+#include "I2C.h"
 
-#define wait_for_completion while(!(TWCR & (1 << TWINT)));
+#define wait_for_completion while (!(TWCR & (1 << TWINT)))
+
 #define I2C_WRITE 0
 #define I2C_READ 1
-#define WHO_AM_I 0x68
+#define MPU6050_ADDR 0x68 // WHO_AM_I should return 0x68
 
-void InitI2C () {
-    StartI2C_Trans(WHO_AM_I); // Wake up I2C module on mega 2560 I2C address is 0b1101000
-
-    StartI2C_Trans(0x6B); 
-    Write(0x00); // Power Managment register is 6B and I must set every bit in that register to 0
+void InitI2C() {
+    // Wake up the MPU6050 by writing 0x00 to PWR_MGMT_1 (0x6B)
+    StartI2C_Trans(MPU6050_ADDR);
+    Write(0x6B);      // Power management register
+    Write(0x00);      // Wake up the MPU6050
     StopI2C_Trans();
-    
-    //- Accelerometre Configuration regiser is 1C set all the bits to 0
-    //- Convert accelerometre value from LSB/g to g by dividing the value of the output reg by the LSB Sensitivity
-    //?- Read from the Accelerometre register 
-    //3B XOUT_high, 3C XOUT_low, 3D YOUT_high, 3E YXOUT_low, 3F ZOUT_high, 40 ZXOUT_low,
-    TWSR = ((1<<TWPS1) | (1<<TWPS0)); //- Set prescaler TWPS to Power Managment register is 6B 
-    TWBR = 18; // 100k Hz- Set two wire interface bit rate register TWBR
-    TWCR = (1 << TWEN); //- Enable two wire interface
+
+    // I2C prescaler and bit rate
+    TWSR &= ~((1 << TWPS1) | (1 << TWPS0)); // Prescaler = 1
+    TWBR = 18;                              // ~100kHz for 16MHz system clock
+    TWCR = (1 << TWEN);                     // Enable TWI
+
+    _delay_ms(100);                         // Wait for MPU6050 to stabilize
 }
 
 void StartI2C_Trans(unsigned char SLA) {
-    // set the start condition
-    TWCR = ((1 << TWEN) | (1 << TWINT) | (1 << TWSTA));
+    TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN); // Start condition
     wait_for_completion;
-    // send the address
-    TWDR =  SLA + I2C_WRITE; // SLA+W, address + write bit
-    TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
+
+    TWDR = (SLA << 1) | I2C_WRITE;
+    TWCR = (1 << TWINT) | (1 << TWEN);
     wait_for_completion;
 }
 
-
 void StopI2C_Trans() {
-
-    TWCR = ((1 << TWEN) | (1 << TWINT) | (1 << TWSTO)); // trigger I2C action
-    wait_for_completion;
-
+    TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO); // Stop condition
+    while (TWCR & (1 << TWSTO)); // Wait for stop to complete
 }
 
 void Write(unsigned char data) {
-
-    TWDR = data; // register value in the data register
-    TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
+    TWDR = data;
+    TWCR = (1 << TWINT) | (1 << TWEN);
     wait_for_completion;
-
 }
 
-void Read_from(unsigned char SLA, unsigned char MEMADDRESS) {
+void ReadAccelData(int16_t* x, int16_t* y, int16_t* z) {
+    uint8_t regAddr = 0x3B; // Start at ACCEL_XOUT_H
 
-    StartI2C_Trans(SLA);
-    Write(MEMADDRESS);
-    // switch master to read (receiver) mode and slave to transmitter
-    TWCR = ((1 << TWEN) | (1 << TWINT) | (1 << TWSTA)); // set another start
+    // Write register address to start reading from
+    StartI2C_Trans(MPU6050_ADDR);
+    Write(regAddr);
+
+    // Repeated start, switch to read mode
+    TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
     wait_for_completion;
-    TWDR = (SLA << 1) + I2C_READ; // SLA+R, switch to reading
-    //TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
-    //wait_for_completion;
-    // perform first read to get the MSB
 
-    TWCR = ((1 << TWINT) | (1 << TWEN) | (1 << TWEA)); // with ACK set
+    TWDR = (MPU6050_ADDR << 1) | I2C_READ;
+    TWCR = (1 << TWINT) | (1 << TWEN);
     wait_for_completion;
-    
-    // the received byte is now in the TWDR data register
-  //  Read_data(); 
-    // second read to get LSB
-    TWCR = ((1 << TWINT) | (1 << TWEN)); // no acknowledge bit set, NOT ACK
+
+    // Read 6 bytes (X, Y, Z high and low)
+    uint8_t data[6];
+    for (int i = 0; i < 5; i++) {
+        TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA); // ACK
+        wait_for_completion;
+        data[i] = TWDR;
+    }
+    TWCR = (1 << TWINT) | (1 << TWEN); // NACK on last byte
     wait_for_completion;
-    // the second byte is now in TWDR
-  ;
+    data[5] = TWDR;
 
+    StopI2C_Trans();
+
+    // Combine high and low bytes into signed 16-bit values
+    *x = (int16_t)((data[0] << 8) | data[1]);
+    *y = (int16_t)((data[2] << 8) | data[3]);
+    *z = (int16_t)((data[4] << 8) | data[5]);
 }
-
-unsigned char Read_data() {
-    return TWDR;
-}
-
-/*
-uint16_t accVal () {
-
-
-// specify the register
-TWDR = 0x03; // register value in the data register
-TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
-wait_for_completion;
-// switch master to read (receiver) mode and slave to transmitter
-TWCR = ((1 << TWEN) | (1 << TWINT) | (1 << TWSTA)); // set another start
-wait_for_completion;
-TWDR = 0x6C + I2C_READ; // SLA+R, switch to reading
-TWCR = ((1 << TWEN | (1 << TWINT))); // trigger I2C action
-wait_for_completion;
- // perform first read to get the MSB
-TWCR = ((1 << TWINT) | (1 << TWEN) | (1 << TWEA)); // with ACK set
-wait_for_completion;
-// the received byte is now in the TWDR data register
-register_value = (TWDR << 8); // put value in top half of variable
-// second read to get LSB
-TWCR = ((1 << TWINT) | (1 << TWEN)); // no acknowledge bit set, NOT ACK
-wait_for_completion;
-// the second byte is now in TWDR
-register_value += TWDR;
-
-return register_value;
-}
-
-*/
