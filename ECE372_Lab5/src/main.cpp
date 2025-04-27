@@ -34,7 +34,7 @@ int main () {
 
   Serial.begin(9600);
   Serial.flush();
-  Serial.println("Starting...");
+  //Serial.println("Starting...");
     // Initialize the timer and PWM timer
     initTimer1();
     initPWMTimer3();
@@ -46,8 +46,10 @@ int main () {
     sei(); // Enable global interrupts
     
     //start with smiley face
+
+    while (1) {
     displaySmileyFace();
-    
+    }
   
   while (1) {
  /* Use as the reference
