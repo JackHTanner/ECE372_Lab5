@@ -4,6 +4,8 @@
 #include <avr/io.h>
 void initPWMTimer3();
 
-void changeDutyCycle(uint16_t adcValue);
+void turnOnDutyCycle();
+
+void turnOffDutyCycle();
 
 #endif
