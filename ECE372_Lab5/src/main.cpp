@@ -13,6 +13,7 @@ typedef enum
   FROWN,
 } StateType;
 
+
 typedef enum stateName
 {
   WAIT_PRESS,
@@ -73,9 +74,10 @@ int main () {
     Serial.print(" ");
     Serial.print(az);
     Serial.print(" ");
+
     if (isTilted){
       Serial.println("IT's TILTING!!!!");
-      state = FROWN;
+      state = FROWN; 
     }
 
     else{
@@ -97,6 +99,7 @@ int main () {
         Serial.println("In default LED state.");
         break;
     }
+
 
     switch(buttonState){
       case WAIT_PRESS:
@@ -122,8 +125,16 @@ int main () {
     else{
       turnOffDutyCycle();
     }
+
+
+
 	}
+
+
+
+
   return 0;
+}
 }
 
 ISR(PCINT0_vect){
@@ -139,9 +150,24 @@ ISR(PCINT0_vect){
 }
 
 ISR(TIMER2_OVF_vect) {
+
+overflowCount;
+
+for ()
+
+
+
+
   overflowCount++;
   if (overflowCount >= 25) { // ~100ms if each overflow is ~4ms
       overflowCount = 0;
+    if (useHighFreq) {
+      for (int i = 99; i < 199; i++){
+      ICR3 = i;
+      OCR3B = ICR3 / 2; // 50% duty
+      }
+    }
+      /*
       useHighFreq = !useHighFreq;
 
       if (useHighFreq) {
@@ -149,6 +175,8 @@ ISR(TIMER2_OVF_vect) {
       } else {
           ICR3 = 199;
       }
-      OCR3B = ICR3 / 2; // 50% duty
+
+      */
+      
   }
 }
